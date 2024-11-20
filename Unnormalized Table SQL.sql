@@ -1,6 +1,6 @@
-DROP TABLE IF EXISTS UnnormalizedBooks CASCADE;
+DROP PROCEDURE IF EXISTS NormalizeBooks;
 
-CREATE TABLE UnnormalizedBooks (
+CREATE TABLE IF NOT EXISTS UnnormalizedBooks (
     CRN INT,
     ISBN VARCHAR(20),
     Title VARCHAR(255),
@@ -13,15 +13,52 @@ CREATE TABLE UnnormalizedBooks (
     CourseName VARCHAR(100),
     PRIMARY KEY (CRN, ISBN)
 );
+	
+CREATE OR REPLACE PROCEDURE NormalizeBooks()
+LANGUAGE plpgsql
+AS $$
+BEGIN
+   
+    DROP TABLE IF EXISTS BookAuthor_3NF CASCADE;
+    DROP TABLE IF EXISTS PublisherAddress_3NF CASCADE;
+    DROP TABLE IF EXISTS Book_3NF CASCADE;
+    DROP TABLE IF EXISTS Publisher_3NF CASCADE;
+    DROP TABLE IF EXISTS Author_2NF CASCADE;
+    DROP TABLE IF EXISTS Book_2NF CASCADE;
+    DROP TABLE IF EXISTS Course_2NF CASCADE;
+    DROP TABLE IF EXISTS Course_1NF CASCADE;
+   
+   
+  --    1NF
+    CREATE TABLE Course_1NF AS
+    SELECT 
+        CRN,
+        ISBN,
+        Title,
+        TRIM(UNNEST(STRING_TO_ARRAY(Authors, ','))) AS Author, -- Split authors into separate rows
+        Edition,
+        Publisher,
+        PublisherAddress,
+        Pages,
+        Year,
+        CourseName
+    FROM UnnormalizedBooks;
 
--- Insert data into the table (example rows based on the provided dataset)
-INSERT INTO UnnormalizedBooks (CRN, ISBN, Title, Authors, Edition, Publisher, PublisherAddress, Pages, Year, CourseName)
-VALUES
-    (20424, '133970779', 'Fundamentals of Database Systems 7th Edition', 'Ramez Elmasri, Shamkant Navathe', 7, 'Pearson', '1 Lake Street Upper Saddle River, NJ 07458 United States', 1280, 2018, 'Introduction to DB Systems'),
-    (20424, '1111969604', 'Database Systems: Design, Implementation, and Management', 'Carlos Coronel, Steven Morris, Peter Rob', 10, 'Course Technology', '5 Maxwell Drive, Clifton Park NY 12065, Boston MA 02210, USA', 752, 2019, 'Introduction to DB Systems'),
-    (20424, '135188148', 'Database Concepts', 'David Kroenke, David Auer, Scott Vandenberg, Robert Yoder', 9, 'Pearson', '1 Lake Street Upper Saddle River, NJ 07458 United States', 552, 2019, 'Introduction to DB Systems'),
-    (10122, '133970779', 'Fundamentals of Database Systems 7th Edition', 'Ramez Elmasri, Shamkant Navathe', 7, 'Pearson', '1 Lake Street Upper Saddle River, NJ 07458 United States', 1280, 2018, 'Big Data and Analytics'),
-    (20451, '1119803780', 'Systems Analysis and Design', 'Alan Dennis, Barbara Wixom, Roberta M. Roth', 7, 'Wiley', '111 River Street, Hoboken, NJ, USA', 464, 2021, 'Systems Analysis & Design'),
-    (31311, '908606273', 'My Cat Likes to Hide in Boxes', 'Lynley Dodd', 1, 'Mallinson Rendel', '5th Flr, 15 Courtnay Place Te Aro, Wellington, New Zealand', 345, 2013, 'Academic Writing'),
-    (10209, '131103627', 'C Programming Language', 'Brian W. Kernighan, Dennis M. Ritchie', 2, 'Pearson', '1 Lake Street Upper Saddle River, NJ 07458 United States', 272, 1988, 'Programming Principles I'),
-    (10209, '1718501048', 'Effective C: An Introduction to Professional C Programming', 'Robert C. Seacord', 2, 'No Starch Press', '329 Primrose Road, #42 Burlingame, CA 94010-4093 USA', 272, 2020, 'Programming Principles I');
+    ALTER TABLE Course_1NF ADD PRIMARY KEY (CRN, ISBN, Author);
+
+    --  2NF tables
+    CREATE TABLE Course_2NF AS
+    SELECT DISTINCT CRN, CourseName
+    FROM Course_1NF;
+
+    ALTER TABLE Course_2NF ADD PRIMARY KEY (CRN);
+
+    CREATE TABLE Book_2NF AS
+    SELECT DISTINCT ISBN, Title, Edition, Publisher, PublisherAddress, Pages, Year
+    FROM Course_1NF;
+
+    ALTER TABLE Book_2NF ADD PRIMARY KEY (ISBN);
+
+    CREATE TABLE Author_2NF AS
+    SELECT DISTINCT ISBN, Author
+    FROM Course_1NF;
