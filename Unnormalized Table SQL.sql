@@ -62,3 +62,60 @@ BEGIN
     CREATE TABLE Author_2NF AS
     SELECT DISTINCT ISBN, Author
     FROM Course_1NF;
+
+   -- 3NF tables
+    CREATE TABLE Publisher_3NF AS
+    SELECT DISTINCT Publisher, PublisherAddress
+    FROM Book_2NF;
+
+    ALTER TABLE Publisher_3NF ADD PRIMARY KEY (Publisher);
+
+    CREATE TABLE Book_3NF AS
+    SELECT 
+        ISBN, 
+        Title, 
+        Edition, 
+        Publisher, 
+        Pages, 
+        Year
+    FROM Book_2NF;
+
+    ALTER TABLE Book_3NF ADD PRIMARY KEY (ISBN);
+
+    CREATE TABLE PublisherAddress_3NF AS
+    SELECT DISTINCT PublisherAddress 
+    FROM Course_1NF;
+
+    ALTER TABLE PublisherAddress_3NF ADD PRIMARY KEY (PublisherAddress);
+
+    CREATE TABLE BookAuthor_3NF AS
+    SELECT DISTINCT ISBN, Author
+    FROM Author_2NF;
+
+    ALTER TABLE BookAuthor_3NF ADD PRIMARY KEY (ISBN, Author);
+
+    -- foreign keys
+    ALTER TABLE Book_3NF ADD CONSTRAINT fk_publisher FOREIGN KEY (Publisher) REFERENCES Publisher_3NF (Publisher);
+    ALTER TABLE BookAuthor_3NF ADD CONSTRAINT fk_book FOREIGN KEY (ISBN) REFERENCES Book_3NF (ISBN);
+END;
+$$;
+
+-- Execute the procedure
+CALL NormalizeBooks();
+
+-- Check UnnormalizedBooks table
+-- SELECT * FROM UnnormalizedBooks;
+
+-- Check 1NF table
+-- SELECT * FROM Course_1NF;
+
+-- Check 2NF tables
+-- SELECT * FROM Course_2NF;
+-- SELECT * FROM Book_2NF;
+-- SELECT * FROM Author_2NF;
+
+-- Check 3NF tables
+-- SELECT * FROM Book_3NF;
+-- SELECT * FROM Publisher_3NF;
+-- SELECT * FROM BookAuthor_3NF;
+
