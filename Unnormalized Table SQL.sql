@@ -1,5 +1,8 @@
 DROP PROCEDURE IF EXISTS NormalizeBooks;
 
+-- The following data was imported from the file 'UnnormalizedBooks.csv'.
+-- Imported using pgAdmin4's import wizard.
+
 CREATE TABLE IF NOT EXISTS UnnormalizedBooks (
     CRN INT,
     ISBN VARCHAR(20),
